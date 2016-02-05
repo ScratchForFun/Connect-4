@@ -82,16 +82,18 @@ public class Frame {
 
     public void buttonPress(int i) {
 
-        new GeneticAlgorithm();
-        /* The player makes a move
-        if (fourInARow.makeMove(i, FourInARow.PLAYER_1)) {
+        if (Main.TRAIN_AI) {
+            new GeneticAlgorithm();
+        }
+        // The player makes a move
+        else if (fourInARow.makeMove(i, FourInARow.PLAYER_1)) {
             setText(FourInARow.TEXT_OPPONENTS_MOVE);
 
             // The computer does its move
             //fourInARow.makeMove(RandomPlayer.getRandomMove(fourInARow.getBoard()), FourInARow.PLAYER_2);
             if (fourInARow.makeMove(neuralPlayer.getMove(fourInARow.getBoard()), FourInARow.PLAYER_2))
                 setText(FourInARow.TEXT_YOUR_MOVE);
-        }*/
+        }
     }
 
 }
