@@ -1,6 +1,9 @@
 package net.vaagen.fourinarow.gfx;
 
 import javax.swing.*;
+
+import net.vaagen.fourinarow.FourInARow;
+
 import java.awt.*;
 import static net.vaagen.fourinarow.FourInARow.*;
 
@@ -17,9 +20,12 @@ public class Table extends JPanel implements Runnable {
 
     private Frame frame;
     private Thread thread;
+    private int[][] cachedBoard;
+    private int optimalMove = -1;
 
     public Table(Frame frame) {
         this.frame = frame;
+        this.cachedBoard = new int[7][6];
         this.thread = new Thread(this);
         this.thread.start();
 
@@ -42,6 +48,14 @@ public class Table extends JPanel implements Runnable {
                 g.fillRect(x * tileSize + border, (heightAmount - y - 1) * tileSize + border, tileSize, tileSize);
             }
         }
+        
+        optimalMove = getOptimalMove();
+        if (optimalMove != -1) {
+	        g.setColor(new Color(24/ 255F, 240 / 255F, 74 / 255F, 0.5F));
+	        int optimalY = frame.getFourInARow().getYForX(optimalMove);
+	        float size = 1F;
+	        g.fillRect((int) (optimalMove * tileSize + border + tileSize / 2 - tileSize / 2 * size), (int) ((heightAmount - optimalY - 1) * tileSize + border + tileSize / 2 - tileSize / 2 * size), (int) (tileSize * size), (int) (tileSize * size));
+        }
 
         g.setColor(Color.BLACK);
         for (int x = 0; x < widthAmount+1; x++)
@@ -52,6 +66,16 @@ public class Table extends JPanel implements Runnable {
 
     public int getWidth() {
         return tileSize * widthAmount + border * 2 + 1;
+    }
+    
+    public int getOptimalMove() {
+    	// Make sure we are trying to get a optimal move to a new board
+    	if (optimalMove == -1 || !FourInARow.areBoardsEqual(frame.getFourInARow().getBoard(), cachedBoard)) {
+    		cachedBoard = frame.getFourInARow().getBoardCopy();
+    		optimalMove = frame.getNeuralPlayer().getMove(cachedBoard, frame.getFourInARow().getCurrentPlayer());
+    	}
+    	
+    	return optimalMove;
     }
 
     @Override
@@ -65,7 +89,7 @@ public class Table extends JPanel implements Runnable {
             repaint();
 
             try {
-                Thread.sleep(10);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

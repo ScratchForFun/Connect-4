@@ -20,11 +20,15 @@ public class FourInARow {
     private boolean gameOver;
     private int winner;
 
-    public FourInARow() {
-        board = new int[widthAmount][heightAmount];
+    public FourInARow(int startingPlayer) {
+    	board = new int[widthAmount][heightAmount];
 
         gameOver = false;
-        currentPlayer = PLAYER_1;
+        currentPlayer = startingPlayer;
+    }
+    
+    public FourInARow() {
+        this(PLAYER_1);
     }
 
     public FourInARow(Frame frame) {
@@ -32,7 +36,17 @@ public class FourInARow {
         this.frame = frame;
         setText(TEXT_YOUR_MOVE);
     }
+    
+    public FourInARow(Frame frame, int startingPlayer) {
+        this(startingPlayer);
+        this.frame = frame;
+        setText(TEXT_YOUR_MOVE);
+    }
 
+    public void resetGame() {
+    	board = new int[widthAmount][heightAmount];
+    }
+    
     public boolean makeMove(int move, int playerMakingMove) {
         if (gameOver)
             return false;
@@ -42,27 +56,31 @@ public class FourInARow {
             return false;
         }
 
-        boolean full = true;
-        for (int y = 0; y < heightAmount; y++) {
-            if (board[move][y] == 0) {
-                full = false;
-                board[move][y] = currentPlayer;
-                if (isFourInARow(move, y)) {
-                    setText(String.format(TEXT_WINNER, currentPlayer));
-                    winner = currentPlayer;
-                    gameOver = true;
-                }
-                break;
+        int y = getYForX(move);
+        if (y != -1) {
+        	board[move][y] = currentPlayer;
+            if (isFourInARow(move, y)) {
+                setText(String.format(TEXT_WINNER, currentPlayer));
+                winner = currentPlayer;
+                gameOver = true;
             }
-        }
-
-        if (full) {
-            System.out.println("This column is full, please choose another."); // TODO : Disable the buttons
+        } else {
+        	System.out.println("This column is full, please choose another."); // TODO : Disable the buttons
             return false;
         }
 
         currentPlayer = getOppositePlayer(currentPlayer);
         return true;
+    }
+    
+    public int getYForX(int x) {
+    	for (int y = 0; y < heightAmount; y++) {
+            if (board[x][y] == 0) {
+            	return y;
+            }
+    	}
+    	
+    	return -1;
     }
 
     public boolean isFourInARow(int x, int y) {
@@ -145,6 +163,33 @@ public class FourInARow {
     public int[][] getBoard() {
         return board;
     }
+    
+    public int[][] getBoardCopy() {
+		int[][] newgrid = new int [7][6];
+		for (int row = 0; row < 6; row++)
+    		for (int col = 0; col < 7; col++)
+    			newgrid[col][row] = board[col][row];
+    	return newgrid;
+	}
+    
+    public static int[][] getBoardOppositePlayer(int[][] board) {
+    	int[][] newGrid = new int[7][6];
+		for (int row = 0; row < 6; row++)
+    		for (int col = 0; col < 7; col++)
+    			newGrid[col][row] = getOppositePlayer(board[col][row]);
+		return newGrid;
+    }
+    
+    public static boolean areBoardsEqual(int[][] board1, int[][] board2) {
+    	for (int x = 0; x < board1.length; x++) {
+    		for (int y = 0; y < board1[0].length; y++) {
+    			if (board1[x][y] != board2[x][y])
+    				return false;
+    		}
+    	}
+    	
+    	return true;
+    }
 
     public boolean isGameOver() {
         boolean full = true;
@@ -165,16 +210,39 @@ public class FourInARow {
         return currentPlayer;
     }
 
-    public int getOppositePlayer(int player) {
+    public static int getOppositePlayer(int player) {
         if (player == PLAYER_1)
             return PLAYER_2;
-        else
+        else if (player == PLAYER_2)
             return PLAYER_1;
+        return 0;
+    }
+    
+    public static String getAppropiateText(int player) {
+    	if (player == PLAYER_1)
+    		return TEXT_OPPONENTS_MOVE;
+    	else if (player == PLAYER_2)
+    		return TEXT_YOUR_MOVE;
+    	return "Unknown player";
     }
 
     private void setText(String text) {
         if (frame != null)
             frame.setText(text);
+    }
+    
+    public static void printBoard(int[][] board) {
+    	String border = "";
+    	
+    	System.out.println("==============");
+    	for (int y = 0; y < board[0].length; y++) {
+    		String line = border;
+    		for (int x = 0; x < board.length; x++) {
+    			String move = board[x][y] + "";
+    			line += (move == "0" ? "." : (move == "-1" ? "2" : move)) + border;
+    		}
+    		System.out.println(line);
+    	}
     }
 
 }

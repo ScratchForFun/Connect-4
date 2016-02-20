@@ -7,7 +7,9 @@ import javax.swing.*;
  */
 public class Main {
 
-    public static boolean TRAIN_AI = false;
+    public static boolean TRAIN_AI = true;
+    public static boolean PLAY_VERSUS_AI = true;
+    public static boolean PLAY_VERSUS_NETWORK = false; // Play versus the network, and not the minimax
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {

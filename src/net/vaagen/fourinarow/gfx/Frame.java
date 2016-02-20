@@ -1,5 +1,6 @@
 package net.vaagen.fourinarow.gfx;
 
+import net.vaagen.connect4.minimax.Minimax;
 import net.vaagen.fourinarow.FourInARow;
 import net.vaagen.fourinarow.NeuralPlayer;
 import net.vaagen.fourinarow.RandomPlayer;
@@ -9,6 +10,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.Scanner;
 
 /**
  * Created by Magnus on 2/1/2016.
@@ -24,7 +27,6 @@ public class Frame {
         Table table = new Table(this);
 
         JPanel topPanel = new JPanel(new GridLayout(2, 1, 4, 4));
-
         JPanel panel = new JPanel(new GridLayout(1, FourInARow.widthAmount, 10, 0));
         for (int i = 0; i < FourInARow.widthAmount; i++) {
             final int currentButton = i;
@@ -45,7 +47,7 @@ public class Frame {
         label = new JLabel();
         topPanel.add(label);
         topPanel.add(panel);
-        frame.getContentPane().setPreferredSize(new Dimension(table.getWidth() - 10, 600));
+        frame.getContentPane().setPreferredSize(new Dimension(table.getWidth() - 2, 600));
         frame.getContentPane().add(table, BorderLayout.SOUTH);
         frame.add(topPanel);
         frame.pack();
@@ -67,8 +69,65 @@ public class Frame {
 
         frame.setVisible(true);
 
-        fourInARow = new FourInARow(this);
-        neuralPlayer = new NeuralPlayer();
+        fourInARow = new FourInARow(this, FourInARow.PLAYER_2);
+        neuralPlayer = new NeuralPlayer(new File("trained-network.txt"));
+        
+        new Thread(new Runnable() {
+			@Override
+			public void run() {
+				Scanner scanner = new Scanner(System.in);
+				
+				boolean running = true;
+				while (running) {
+					String input = scanner.nextLine();
+					if (input.equalsIgnoreCase("save")) {
+						neuralPlayer.saveNetwork("trained-network.txt");
+						System.out.println("Successfully stored the neural network!");
+					} else if (input.equalsIgnoreCase("new game")) {
+						newGame();
+					} else if (input.equalsIgnoreCase("play network")) {
+						Main.PLAY_VERSUS_NETWORK = true;
+						newGame();
+					} else if (input.equalsIgnoreCase("play minimax")) {
+						Main.PLAY_VERSUS_NETWORK = false;
+						newGame();
+					}
+				}
+			}
+        }).start();
+        newGame();
+        
+        // Make sure we are playing the Genetic Algorithm
+        new Thread(new Runnable() {
+        	public void run() {
+        		if (Main.TRAIN_AI && Main.PLAY_VERSUS_AI) {
+    	        	for (int i = 0; i < 50; i++) {
+    	        		fourInARow = new FourInARow();
+    	        		while (!fourInARow.isGameOver()) {
+    	        			int bestMove = new Minimax(fourInARow.getBoard(), 8).calcValue(fourInARow.getCurrentPlayer());
+    	            		neuralPlayer.train(fourInARow.getBoard(), bestMove);
+        	    			neuralPlayer.saveNetwork("trained_network.txt");
+    	        			
+    	            		// Make the move
+    	            		fourInARow.makeMove(bestMove, fourInARow.getCurrentPlayer());      		
+    	        		}
+    	        		
+    	    			System.out.println((i+1) + " training sessions");
+    	        	}
+    	        }
+        	}
+        }).start();
+    }
+    
+    public void newGame() {
+        fourInARow.resetGame();
+        int player = FourInARow.PLAYER_2;
+    	int bestMove = getComputerMove(player);
+		
+		// The computer does its move
+        if (Main.PLAY_VERSUS_AI && fourInARow.makeMove(bestMove, player))
+            setText(FourInARow.TEXT_YOUR_MOVE);
+		System.out.println("Starting new game..");
     }
 
     public void setText(String text) {
@@ -79,21 +138,50 @@ public class Frame {
     public FourInARow getFourInARow() {
         return fourInARow;
     }
+    
+    public NeuralPlayer getNeuralPlayer() {
+    	return neuralPlayer;
+    }
 
     public void buttonPress(int i) {
-
-        if (Main.TRAIN_AI) {
-            new GeneticAlgorithm();
-        }
-        // The player makes a move
-        else if (fourInARow.makeMove(i, FourInARow.PLAYER_1)) {
-            setText(FourInARow.TEXT_OPPONENTS_MOVE);
-
-            // The computer does its move
-            //fourInARow.makeMove(RandomPlayer.getRandomMove(fourInARow.getBoard()), FourInARow.PLAYER_2);
-            if (fourInARow.makeMove(neuralPlayer.getMove(fourInARow.getBoard()), FourInARow.PLAYER_2))
-                setText(FourInARow.TEXT_YOUR_MOVE);
-        }
+    	boolean successfullMove = false;
+    	
+    	// The player makes a move
+    	if (!Main.PLAY_VERSUS_AI) {
+    		if (fourInARow.makeMove(i, fourInARow.getCurrentPlayer())) {
+	            setText(FourInARow.getAppropiateText(FourInARow.getOppositePlayer(fourInARow.getCurrentPlayer())));
+	    		successfullMove = true;
+    		}
+    	} else {
+    		if (fourInARow.makeMove(i, FourInARow.PLAYER_1)) {
+	            setText(FourInARow.TEXT_OPPONENTS_MOVE);
+    			successfullMove = true;
+    		}
+    	}
+    	
+    	if (successfullMove) {
+    		new Thread(new Runnable() {
+				@Override
+				public void run() {
+					int player = FourInARow.PLAYER_2;
+					int bestMove = getComputerMove(player);
+		    		
+		    		// The computer does its move
+		            if (Main.PLAY_VERSUS_AI && fourInARow.makeMove(bestMove, player)) {
+		            	neuralPlayer.train(fourInARow.getBoard(), bestMove);
+		                setText(FourInARow.TEXT_YOUR_MOVE);
+		            }
+				}
+    		}).start();
+    	}
+    }
+    
+    public int getComputerMove(int forPlayer) {
+    	if (Main.PLAY_VERSUS_NETWORK) {
+    		return neuralPlayer.getMove(fourInARow.getBoard(), forPlayer);
+    	} else {
+    		return new Minimax(fourInARow.getBoard(), 8).calcValue(FourInARow.PLAYER_2);
+    	}
     }
 
 }

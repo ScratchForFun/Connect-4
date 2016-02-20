@@ -1,5 +1,12 @@
 package net.vaagen.fourinarow.neuralnetwork;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.Random;
 
 /**
@@ -11,7 +18,7 @@ public class NeuralNetwork {
 
     // TODO : This is a triple layered Neural Network, one input, one hidden and one output layer.
 
-    private float learningRate = 0.5F;
+    private float learningRate = 0.3F;
 
     private int inputNeurons;
     private int hiddenNeurons;
@@ -24,61 +31,111 @@ public class NeuralNetwork {
     private float[][] hiddenWeights;
 
     private Neuron[] outputLayer;
+    
+    private File savedNetwork;
 
     public NeuralNetwork(int inputNeurons, int hiddenNeurons, int outputNeurons) {
         this.inputNeurons = inputNeurons;
         this.hiddenNeurons = hiddenNeurons;
         this.outputNeurons = outputNeurons;
     }
+    
+    public void setSavedFile(File file) {
+    	this.savedNetwork = file;
+    }
 
-    public void trainNetwork(int echo) {
-        for (int attempts = 0; attempts < echo; attempts++) {
-            calculateHiddenLayers();
-            calculateOutputLayers();
+    public void trainNetwork(float[] expectedOutput) {
+        calculateHiddenLayers();
+        calculateOutputLayers();
+        
+        // Backwards propagation
+        // Using partial derivatives
+        float[][] newHiddenWeights = getNewHiddenWeights(new float[hiddenWeights.length][hiddenWeights[0].length], expectedOutput);
+        float[][] newInputWeights = getNewInputWeights(new float[inputWeights.length][inputWeights[0].length], expectedOutput);
 
-            float[] targetOutput = new float[outputNeurons]; // TODO : SET TARGET OUTPUT
-
-            // Backwards propagation
-            // Using partial derivatives
-            float[][] newHiddenWeights = getNewHiddenWeights(new float[hiddenWeights.length][hiddenWeights[0].length], targetOutput);
-            float[][] newInputWeights = getNewInputWeights(new float[inputWeights.length][inputWeights[0].length], targetOutput);
-
-            hiddenWeights = newHiddenWeights;
-            inputWeights = newInputWeights;
-
-            if ((attempts+1) % 100 == 0) {
-                //float totalError = calculateError();
-                //System.out.println("The total error using Squared Error Function is " + totalError + " after attempt #" + (attempts+1));
-            }
-        }
+        hiddenWeights = newHiddenWeights;
+        inputWeights = newInputWeights;
     }
 
     public void initializeNetwork() {
-        // Get Random
-        Random random = new Random();
-
-        // Input layer
-        inputLayer = new Neuron[inputNeurons];
-        for (int i = 0; i < inputLayer.length; i++)
-            inputLayer[i] = new Neuron().setOutput(random.nextFloat());
-        inputWeights = new float[inputNeurons][hiddenNeurons];
-        for (int x = 0; x < inputWeights.length; x++)
-            for (int y = 0; y < inputWeights[0].length; y++)
-                inputWeights[x][y] = random.nextFloat();
-
-        // Hidden layer
-        hiddenLayer = new Neuron[hiddenNeurons];
-        for (int i = 0; i < hiddenLayer.length; i++)
-            hiddenLayer[i] = new Neuron().setBias(random.nextFloat());
-        hiddenWeights = new float[hiddenNeurons][outputNeurons];
-        for (int x = 0; x < hiddenWeights.length; x++)
-            for (int y = 0; y < hiddenWeights[0].length; y++)
-                hiddenWeights[x][y] = random.nextFloat();
-
-        // Output layer
-        outputLayer = new Neuron[outputNeurons];
-        for (int i = 0; i < outputLayer.length; i++)
-            outputLayer[i] = new Neuron().setBias(random.nextFloat()); //.setTargetOutput(random.nextFloat());
+    	if (savedNetwork == null || !savedNetwork.exists()) {
+	        // Get Random
+	        Random random = new Random();
+	
+	        // Input layer
+	        inputLayer = new Neuron[inputNeurons];
+	        for (int i = 0; i < inputLayer.length; i++)
+	            inputLayer[i] = new Neuron().setOutput(random.nextFloat());
+	        inputWeights = new float[inputNeurons][hiddenNeurons];
+	        for (int x = 0; x < inputWeights.length; x++)
+	            for (int y = 0; y < inputWeights[0].length; y++)
+	                inputWeights[x][y] = random.nextFloat();
+	
+	        // Hidden layer
+	        hiddenLayer = new Neuron[hiddenNeurons];
+	        for (int i = 0; i < hiddenLayer.length; i++)
+	            hiddenLayer[i] = new Neuron().setBias(random.nextFloat());
+	        hiddenWeights = new float[hiddenNeurons][outputNeurons];
+	        for (int x = 0; x < hiddenWeights.length; x++)
+	            for (int y = 0; y < hiddenWeights[0].length; y++)
+	                hiddenWeights[x][y] = random.nextFloat();
+	
+	        // Output layer
+	        outputLayer = new Neuron[outputNeurons];
+	        for (int i = 0; i < outputLayer.length; i++)
+	            outputLayer[i] = new Neuron().setBias(random.nextFloat()); //.setTargetOutput(random.nextFloat());
+    	} else {
+    		try {
+	    		// FileReader reads text files in the default encoding.
+	            FileReader fileReader = new FileReader(savedNetwork);
+	            // Always wrap FileReader in BufferedReader.
+	            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            
+	            // A string array of the input neurons
+				String[] inputNeurons = bufferedReader.readLine().split("],");// Input layer
+		        inputLayer = new Neuron[inputNeurons.length];
+				for (int i = 0; i < inputNeurons.length; i++) {
+					String[] currentNeuron = inputNeurons[i].replace("[", "").replace("]", "").split(",\\{");
+					float bias = Float.parseFloat(currentNeuron[0]);
+					inputLayer[i] = new Neuron().setBias(bias);
+					
+					String[] weights = currentNeuron[1].replace("}", "").split(",");
+			        if (inputWeights == null)
+			        	inputWeights = new float[inputNeurons.length][weights.length];
+					for (int w = 0; w < weights.length; w++)
+						inputWeights[i][w] = Float.parseFloat(weights[w]);
+				}
+				
+				// A string array of the hidden neurons
+				String[] hiddenNeurons = bufferedReader.readLine().split("],");// Hidden layer
+		        hiddenLayer = new Neuron[hiddenNeurons.length];
+				for (int i = 0; i < hiddenNeurons.length; i++) {
+					String[] currentNeuron = hiddenNeurons[i].replace("[", "").replace("]", "").split(",\\{");
+					float bias = Float.parseFloat(currentNeuron[0]);
+					hiddenLayer[i] = new Neuron().setBias(bias);
+					
+					String[] weights = currentNeuron[1].replace("}", "").split(",");
+			        if (hiddenWeights == null)
+			        	hiddenWeights = new float[hiddenNeurons.length][weights.length];
+					for (int w = 0; w < weights.length; w++)
+						hiddenWeights[i][w] = Float.parseFloat(weights[w]);
+				}
+				
+				// A string array of the output neurons
+				String[] outputNeurons = bufferedReader.readLine().split("],");// Output layer
+		        outputLayer = new Neuron[outputNeurons.length];
+				for (int i = 0; i < outputNeurons.length; i++) {
+					String[] currentNeuron = outputNeurons[i].replace("[", "").replace("]", "").split(",\\{");
+					float bias = Float.parseFloat(currentNeuron[0]);
+					outputLayer[i] = new Neuron().setBias(bias);
+				}
+				
+				System.out.println("Succesfully stored neural network!");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
     }
 
     public void mutate() {
@@ -259,6 +316,68 @@ public class NeuralNetwork {
         for (int r = 0; r < array.length; r++)
             result[r] = array[r].clone();
         return result;
+    }
+    
+    public File saveNetworkToFile(String filePath) {
+		try {
+			PrintWriter writer = new PrintWriter(filePath, "UTF-8");
+			String inputWeights = "";
+	    	for (int i = 0; i < inputNeurons; i++) {
+	    		inputWeights += "[";
+	    		inputWeights += inputLayer[i].getBias() + ",";
+	    		
+	    		inputWeights += "{";
+	    		for (int iw = 0; iw < this.inputWeights[i].length; iw++) {
+	    			inputWeights += this.inputWeights[i][iw];
+	    			if (iw < this.inputWeights[i].length - 1)
+	    				inputWeights += ",";
+	    		}
+	    		inputWeights += "}";
+	    		
+	    		inputWeights += "]";
+	    		
+	    		if (i < inputNeurons-1)
+	    			inputWeights += ",";
+	    	}
+	    	
+	    	String hiddenWeights = "";
+	    	for (int i = 0; i < hiddenNeurons; i++) {
+	    		hiddenWeights += "[";
+	    		hiddenWeights += hiddenLayer[i].getBias() + ",";
+	    		
+	    		hiddenWeights += "{";
+	    		for (int iw = 0; iw < this.hiddenWeights[i].length; iw++) {
+	    			hiddenWeights += this.hiddenWeights[i][iw];
+	    			if (iw < this.hiddenWeights[i].length - 1)
+	    				hiddenWeights += ",";
+	    		}
+	    		hiddenWeights += "}";
+	    		
+	    		hiddenWeights += "]";
+	    		
+	    		if (i < hiddenNeurons-1)
+	    			hiddenWeights += ",";
+	    	}
+	    	
+	    	String outputWeights = "";
+	    	for (int i = 0; i < outputNeurons; i++) {
+	    		outputWeights += "[";
+	    		outputWeights += outputLayer[i].getBias();
+	    		outputWeights += "]";
+	    		
+	    		if (i < outputNeurons-1)
+	    			outputWeights += ",";
+	    	}
+	    	
+	    	writer.println(inputWeights);
+	    	writer.println(hiddenWeights);
+	    	writer.println(outputWeights);
+	    	writer.close();
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+    	
+    	return new File(filePath);
     }
 
 }
