@@ -18,7 +18,7 @@ public class NeuralNetwork {
 
     // TODO : This is a triple layered Neural Network, one input, one hidden and one output layer.
 
-    private float learningRate = 0.3F;
+    private float learningRate = 0.4F;
 
     private int inputNeurons;
     private int hiddenNeurons;
@@ -33,6 +33,8 @@ public class NeuralNetwork {
     private Neuron[] outputLayer;
     
     private File savedNetwork;
+    private int correctPredictions;
+    private int totalPredictions;
 
     public NeuralNetwork(int inputNeurons, int hiddenNeurons, int outputNeurons) {
         this.inputNeurons = inputNeurons;
@@ -91,44 +93,65 @@ public class NeuralNetwork {
 	            // Always wrap FileReader in BufferedReader.
 	            BufferedReader bufferedReader = new BufferedReader(fileReader);
             
-	            // A string array of the input neurons
-				String[] inputNeurons = bufferedReader.readLine().split("],");// Input layer
-		        inputLayer = new Neuron[inputNeurons.length];
-				for (int i = 0; i < inputNeurons.length; i++) {
-					String[] currentNeuron = inputNeurons[i].replace("[", "").replace("]", "").split(",\\{");
-					float bias = Float.parseFloat(currentNeuron[0]);
-					inputLayer[i] = new Neuron().setBias(bias);
-					
-					String[] weights = currentNeuron[1].replace("}", "").split(",");
-			        if (inputWeights == null)
-			        	inputWeights = new float[inputNeurons.length][weights.length];
-					for (int w = 0; w < weights.length; w++)
-						inputWeights[i][w] = Float.parseFloat(weights[w]);
-				}
-				
-				// A string array of the hidden neurons
-				String[] hiddenNeurons = bufferedReader.readLine().split("],");// Hidden layer
-		        hiddenLayer = new Neuron[hiddenNeurons.length];
-				for (int i = 0; i < hiddenNeurons.length; i++) {
-					String[] currentNeuron = hiddenNeurons[i].replace("[", "").replace("]", "").split(",\\{");
-					float bias = Float.parseFloat(currentNeuron[0]);
-					hiddenLayer[i] = new Neuron().setBias(bias);
-					
-					String[] weights = currentNeuron[1].replace("}", "").split(",");
-			        if (hiddenWeights == null)
-			        	hiddenWeights = new float[hiddenNeurons.length][weights.length];
-					for (int w = 0; w < weights.length; w++)
-						hiddenWeights[i][w] = Float.parseFloat(weights[w]);
-				}
-				
-				// A string array of the output neurons
-				String[] outputNeurons = bufferedReader.readLine().split("],");// Output layer
-		        outputLayer = new Neuron[outputNeurons.length];
-				for (int i = 0; i < outputNeurons.length; i++) {
-					String[] currentNeuron = outputNeurons[i].replace("[", "").replace("]", "").split(",\\{");
-					float bias = Float.parseFloat(currentNeuron[0]);
-					outputLayer[i] = new Neuron().setBias(bias);
-				}
+	            String input = "";
+	            while ((input = bufferedReader.readLine()) != null) {
+	            	String[] inputArray = input.split(": ");
+	            	if (inputArray[0].equalsIgnoreCase("learning rate")) {
+	            		try {
+	            			float learningRate = Float.parseFloat(inputArray[0]);
+	            			setLearningRate(learningRate);
+	            		} catch (Exception e) { }
+	            	} else if (inputArray[0].equalsIgnoreCase("correct predictions")) {
+	            		try {
+	            			int correctPredictions = Integer.parseInt(inputArray[1]);
+	            			this.correctPredictions = correctPredictions;
+	            		} catch (Exception e) { }
+	            	} else if (inputArray[0].equalsIgnoreCase("total predictions")) {
+	            		try {
+	            			int totalPredictions = Integer.parseInt(inputArray[1]);
+	            			this.totalPredictions = totalPredictions;
+	            		} catch (Exception e) { }
+	            	} else if (inputArray[0].equalsIgnoreCase("input neurons")) {
+	            		// A string array of the input neurons
+	    				String[] inputNeurons = inputArray[1].split("],");// Input layer
+	    		        inputLayer = new Neuron[inputNeurons.length];
+	    				for (int i = 0; i < inputNeurons.length; i++) {
+	    					String[] currentNeuron = inputNeurons[i].replace("[", "").replace("]", "").split(",\\{");
+	    					float bias = Float.parseFloat(currentNeuron[0]);
+	    					inputLayer[i] = new Neuron().setBias(bias);
+	    					
+	    					String[] weights = currentNeuron[1].replace("}", "").split(",");
+	    			        if (inputWeights == null)
+	    			        	inputWeights = new float[inputNeurons.length][weights.length];
+	    					for (int w = 0; w < weights.length; w++)
+	    						inputWeights[i][w] = Float.parseFloat(weights[w]);
+	    				}
+	            	} else if (inputArray[0].equalsIgnoreCase("hidden neurons")) {
+	            		// A string array of the hidden neurons
+	    				String[] hiddenNeurons = inputArray[1].split("],");// Hidden layer
+	    		        hiddenLayer = new Neuron[hiddenNeurons.length];
+	    				for (int i = 0; i < hiddenNeurons.length; i++) {
+	    					String[] currentNeuron = hiddenNeurons[i].replace("[", "").replace("]", "").split(",\\{");
+	    					float bias = Float.parseFloat(currentNeuron[0]);
+	    					hiddenLayer[i] = new Neuron().setBias(bias);
+	    					
+	    					String[] weights = currentNeuron[1].replace("}", "").split(",");
+	    			        if (hiddenWeights == null)
+	    			        	hiddenWeights = new float[hiddenNeurons.length][weights.length];
+	    					for (int w = 0; w < weights.length; w++)
+	    						hiddenWeights[i][w] = Float.parseFloat(weights[w]);
+	    				}
+	            	} else if (inputArray[0].equalsIgnoreCase("output neurons")) {
+	            		// A string array of the output neurons
+	    				String[] outputNeurons = inputArray[1].split("],");// Output layer
+	    		        outputLayer = new Neuron[outputNeurons.length];
+	    				for (int i = 0; i < outputNeurons.length; i++) {
+	    					String[] currentNeuron = outputNeurons[i].replace("[", "").replace("]", "").split(",\\{");
+	    					float bias = Float.parseFloat(currentNeuron[0]);
+	    					outputLayer[i] = new Neuron().setBias(bias);
+	    				}
+	            	}
+	            }
 				
 				System.out.println("Succesfully stored neural network!");
 			} catch (IOException e) {
@@ -318,10 +341,22 @@ public class NeuralNetwork {
         return result;
     }
     
-    public File saveNetworkToFile(String filePath) {
+    public int getCorrectPredictions() {
+    	return correctPredictions;
+    }
+    
+    public int getTotalPredictions() {
+    	return totalPredictions;
+    }
+    
+    public File saveNetworkToFile(String filePath, int correctPredictions, int totalPredictions) {
 		try {
 			PrintWriter writer = new PrintWriter(filePath, "UTF-8");
-			String inputWeights = "";
+			writer.println("learning rate: " + learningRate);
+			writer.println("correct predictions: " + correctPredictions);
+			writer.println("total predictions: " + totalPredictions); 
+			
+			String inputWeights = "input neurons: ";
 	    	for (int i = 0; i < inputNeurons; i++) {
 	    		inputWeights += "[";
 	    		inputWeights += inputLayer[i].getBias() + ",";
@@ -333,14 +368,13 @@ public class NeuralNetwork {
 	    				inputWeights += ",";
 	    		}
 	    		inputWeights += "}";
-	    		
 	    		inputWeights += "]";
 	    		
 	    		if (i < inputNeurons-1)
 	    			inputWeights += ",";
 	    	}
 	    	
-	    	String hiddenWeights = "";
+	    	String hiddenWeights = "hidden neurons: ";
 	    	for (int i = 0; i < hiddenNeurons; i++) {
 	    		hiddenWeights += "[";
 	    		hiddenWeights += hiddenLayer[i].getBias() + ",";
@@ -352,14 +386,13 @@ public class NeuralNetwork {
 	    				hiddenWeights += ",";
 	    		}
 	    		hiddenWeights += "}";
-	    		
 	    		hiddenWeights += "]";
 	    		
 	    		if (i < hiddenNeurons-1)
 	    			hiddenWeights += ",";
 	    	}
 	    	
-	    	String outputWeights = "";
+	    	String outputWeights = "output neurons: ";
 	    	for (int i = 0; i < outputNeurons; i++) {
 	    		outputWeights += "[";
 	    		outputWeights += outputLayer[i].getBias();
@@ -380,4 +413,12 @@ public class NeuralNetwork {
     	return new File(filePath);
     }
 
+    public void setLearningRate(float learningRate) {
+    	this.learningRate = learningRate;
+    }
+    
+    public float getLearningRate() {
+    	return learningRate;
+    }
+    
 }

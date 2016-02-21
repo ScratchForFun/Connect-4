@@ -30,6 +30,22 @@ public class NeuralPlayer {
     public void mutate() {
         network.mutate();
     }
+    
+    public int getCorrectPredictions() {
+    	return network.getCorrectPredictions();
+    }
+    
+    public int getTotalPredictions() {
+    	return network.getTotalPredictions();
+    }
+    
+    public float getLearningRate() {
+    	return network.getLearningRate();
+    }
+    
+    public void setLearningRate(float learningRate) {
+    	network.setLearningRate(learningRate);
+    }
 
     public void train(int[][] board, int bestMove) {
     	setInputForBoard(board);
@@ -66,8 +82,8 @@ public class NeuralPlayer {
         return bestMove;
     }
     
-    public void saveNetwork(String path) {
-    	network.saveNetworkToFile(path);
+    public void saveNetwork(String path, int corPreds, int totPreds) {
+    	network.saveNetworkToFile(path, corPreds, totPreds);
     }
     
     public void setNetworkFile(File file) {

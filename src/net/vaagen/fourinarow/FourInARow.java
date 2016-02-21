@@ -1,5 +1,7 @@
 package net.vaagen.fourinarow;
 
+import java.awt.Point;
+
 import net.vaagen.fourinarow.gfx.Frame;
 
 /**
@@ -19,7 +21,8 @@ public class FourInARow {
     private int currentPlayer;
     private boolean gameOver;
     private int winner;
-
+    private Point lastMove;
+    
     public FourInARow(int startingPlayer) {
     	board = new int[widthAmount][heightAmount];
 
@@ -68,7 +71,8 @@ public class FourInARow {
         	System.out.println("This column is full, please choose another."); // TODO : Disable the buttons
             return false;
         }
-
+        
+        lastMove = new Point(move, y);
         currentPlayer = getOppositePlayer(currentPlayer);
         return true;
     }
@@ -81,6 +85,10 @@ public class FourInARow {
     	}
     	
     	return -1;
+    }
+    
+    public Point getLastMove() {
+    	return lastMove;
     }
 
     public boolean isFourInARow(int x, int y) {

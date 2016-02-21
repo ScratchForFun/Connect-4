@@ -22,8 +22,19 @@ public class Frame {
     private NeuralPlayer neuralPlayer;
     private FourInARow fourInARow;
     private JLabel label;
+    private JLabel labelScore;
+    private JLabel labelLearningRate;
 
+    private int correctMoves = 0;
+    private int totalMoves = 0;
+    
     public Frame() {
+    	// 
+        neuralPlayer = new NeuralPlayer(new File("trained_network.txt"));
+        correctMoves = neuralPlayer.getCorrectPredictions();
+        totalMoves = neuralPlayer.getTotalPredictions();
+        
+        //
         JFrame frame = new JFrame("4 in a row AI, by Magnus Morud Vågen 2/1/2016");
         Table table = new Table(this);
 
@@ -45,8 +56,15 @@ public class Frame {
         }
         panel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
+        JPanel toptopPanel = new JPanel(new GridLayout(3, 1, 4, 4));
         label = new JLabel();
-        topPanel.add(label);
+        labelScore = new JLabel();
+        labelLearningRate = new JLabel();
+        labelLearningRate.setText("Learning Rate: " + neuralPlayer.getLearningRate());
+        toptopPanel.add(label);
+        toptopPanel.add(labelScore);
+        toptopPanel.add(labelLearningRate);
+        topPanel.add(toptopPanel);
         topPanel.add(panel);
         frame.getContentPane().setPreferredSize(new Dimension(table.getWidth() - 2, 600));
         frame.getContentPane().add(table, BorderLayout.SOUTH);
@@ -69,9 +87,7 @@ public class Frame {
         }
 
         frame.setVisible(true);
-
         fourInARow = new FourInARow(this, FourInARow.PLAYER_2);
-        neuralPlayer = new NeuralPlayer(new File("trained-network.txt"));
         
         new Thread(new Runnable() {
 			@Override
@@ -81,8 +97,9 @@ public class Frame {
 				boolean running = true;
 				while (running) {
 					String input = scanner.nextLine();
+					String[] split_input = input.split(" ");
 					if (input.equalsIgnoreCase("save")) {
-						neuralPlayer.saveNetwork("trained-network.txt");
+						neuralPlayer.saveNetwork("trained-network.txt", correctMoves, totalMoves);
 						System.out.println("Successfully stored the neural network!");
 					} else if (input.equalsIgnoreCase("new game")) {
 						newGame();
@@ -92,6 +109,13 @@ public class Frame {
 					} else if (input.equalsIgnoreCase("play minimax")) {
 						Main.PLAY_VERSUS_NETWORK = false;
 						newGame();
+					} else if (split_input.length == 3 && split_input[0].equalsIgnoreCase("learning") && split_input[1].equalsIgnoreCase("rate")) {
+						try {
+							float learningRate = Float.parseFloat(split_input[2]);
+							neuralPlayer.setLearningRate(learningRate);
+							System.out.println("The learning rate has been set to " + learningRate);
+					        labelLearningRate.setText("Learning Rate: " + neuralPlayer.getLearningRate());
+						} catch (Exception e) { }
 					}
 				}
 			}
@@ -111,12 +135,16 @@ public class Frame {
     	        			int player = fourInARow.getCurrentPlayer();
     	        			int bestMove = 0;
     	        			if (player == player_ai || new Random().nextBoolean()) {
+    	        				int networksPreferredMove = neuralPlayer.getMove(fourInARow.getBoard(), player);
 	    	        			bestMove = new Minimax(fourInARow.getBoard(), 8).calcValue(player);
+	    	        			if (bestMove == networksPreferredMove)
+	    	        				correctMoves++;
+	    	        			totalMoves++;
+	    	        			labelScore.setText("Score: " + correctMoves + "/" + totalMoves + " = " + (correctMoves / (float)totalMoves * 100) + "%");
 	    	            		neuralPlayer.train(fourInARow.getBoard(), bestMove);
-	        	    			neuralPlayer.saveNetwork("trained_network.txt");
-    	        			} else if (player == player_random) {
+	        	    			neuralPlayer.saveNetwork("trained_network.txt", correctMoves, totalMoves);
+    	        			} else if (player == player_random)
     	        				bestMove = randomPlayer.getMove(fourInARow.getBoard());
-    	        			}
     	        			
     	            		// Make the move
     	            		if (player == fourInARow.getCurrentPlayer())

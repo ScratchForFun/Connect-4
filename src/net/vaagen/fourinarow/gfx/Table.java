@@ -57,6 +57,11 @@ public class Table extends JPanel implements Runnable {
 	        g.fillRect((int) (optimalMove * tileSize + border + tileSize / 2 - tileSize / 2 * size), (int) ((heightAmount - optimalY - 1) * tileSize + border + tileSize / 2 - tileSize / 2 * size), (int) (tileSize * size), (int) (tileSize * size));
         }
 
+        g.setColor(Color.PINK);
+        Point p = frame.getFourInARow().getLastMove();
+        float size = 0.2F;
+        g.fillRect((int) (p.x * tileSize + border + tileSize / 2 - tileSize / 2 * size), (int) ((heightAmount - p.y - 1) * tileSize + border + tileSize / 2 - tileSize / 2 * size), (int) (tileSize * size), (int) (tileSize * size));
+        
         g.setColor(Color.BLACK);
         for (int x = 0; x < widthAmount+1; x++)
             g.drawLine(x * tileSize + border, border, x * tileSize + border, tileSize * heightAmount + border);
