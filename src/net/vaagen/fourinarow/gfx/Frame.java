@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Random;
 import java.util.Scanner;
 
 /**
@@ -101,15 +102,25 @@ public class Frame {
         new Thread(new Runnable() {
         	public void run() {
         		if (Main.TRAIN_AI && Main.PLAY_VERSUS_AI) {
+        			RandomPlayer randomPlayer = new RandomPlayer();
     	        	for (int i = 0; i < 50; i++) {
     	        		fourInARow = new FourInARow();
+    	        		int player_ai = FourInARow.PLAYER_1;
+    	        		int player_random = FourInARow.PLAYER_2;
     	        		while (!fourInARow.isGameOver()) {
-    	        			int bestMove = new Minimax(fourInARow.getBoard(), 8).calcValue(fourInARow.getCurrentPlayer());
-    	            		neuralPlayer.train(fourInARow.getBoard(), bestMove);
-        	    			neuralPlayer.saveNetwork("trained_network.txt");
+    	        			int player = fourInARow.getCurrentPlayer();
+    	        			int bestMove = 0;
+    	        			if (player == player_ai || new Random().nextBoolean()) {
+	    	        			bestMove = new Minimax(fourInARow.getBoard(), 8).calcValue(player);
+	    	            		neuralPlayer.train(fourInARow.getBoard(), bestMove);
+	        	    			neuralPlayer.saveNetwork("trained_network.txt");
+    	        			} else if (player == player_random) {
+    	        				bestMove = randomPlayer.getMove(fourInARow.getBoard());
+    	        			}
     	        			
     	            		// Make the move
-    	            		fourInARow.makeMove(bestMove, fourInARow.getCurrentPlayer());      		
+    	            		if (player == fourInARow.getCurrentPlayer())
+    	            			fourInARow.makeMove(bestMove, player);      		
     	        		}
     	        		
     	    			System.out.println((i+1) + " training sessions");
